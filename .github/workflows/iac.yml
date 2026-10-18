@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: infra/terraform/aws
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v4
         with: {terraform_version: "1.13.0"}
       - name: fmt
@@ -38,7 +38,7 @@ jobs:
     name: checkov (Terraform + Kubernetes misconfig scan)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: bridgecrewio/checkov-action@v12
         with:
           directory: .

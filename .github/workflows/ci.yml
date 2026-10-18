@@ -21,7 +21,7 @@ jobs:
       matrix:
         service: [checkout-api, incident-copilot]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -44,7 +44,7 @@ jobs:
       PROM_VERSION: "3.5.0"
       KUBECONFORM_VERSION: "0.7.0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - run: pip install pyyaml==6.0.2 yamllint==1.37.1
@@ -84,7 +84,7 @@ jobs:
   dockerfiles:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hadolint/hadolint-action@v3.5.0
         with: {dockerfile: services/checkout-api/Dockerfile}
       - uses: hadolint/hadolint-action@v3.5.0
