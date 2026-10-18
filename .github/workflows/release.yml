@@ -59,21 +59,28 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-      - name: Trivy vulnerability scan (fail on fixable CRITICAL)
+         - name: Trivy gate (fail only on fixable CRITICAL)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}@${{ steps.build.outputs.digest }}
+          scanners: vuln
           severity: CRITICAL
           ignore-unfixed: true
+          format: table
           exit-code: "1"
+      - name: Trivy report (all severities -> GitHub Security tab)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}@${{ steps.build.outputs.digest }}
+          scanners: vuln
           format: sarif
           output: trivy.sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+          exit-code: "0"
+          skip-setup-trivy: true
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('trivy.sarif') != ''
         with: {sarif_file: trivy.sarif, category: "trivy-${{ matrix.service }}"}
-      - uses: sigstore/cosign-installer@v3
-      - name: Sign image (keyless; verified at admission by Kyverno)
-        run: cosign sign --yes "${IMAGE_PREFIX}-${{ matrix.service }}@${{ steps.build.outputs.digest }}"
 
   promote-dev:
     name: promote to dev (GitOps commit)
