@@ -7,7 +7,7 @@ resources:
 # CI (release workflow) bumps this tag on every merge to main -> Argo CD syncs -> canary starts.
 images:
 - name: ghcr.io/marwin226/sentinel-checkout-api
-  newTag: sha-7a266d1
+  newTag: sha-12cb227
 patches:
 - path: release-patch.yaml
   target:

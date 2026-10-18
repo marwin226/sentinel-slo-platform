@@ -5,4 +5,4 @@ resources:
 - deployment.yaml
 images:
 - name: ghcr.io/marwin226/sentinel-incident-copilot
-  newTag: sha-7a266d1
+  newTag: sha-12cb227
