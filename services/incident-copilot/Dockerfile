@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
 # Build context is the repo root so the runbooks ship inside the image.
-FROM python:3.12-slim AS build
+FROM python:3.14-slim AS build
 WORKDIR /build
 COPY services/incident-copilot/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 LABEL org.opencontainers.image.source="https://github.com/marwin226/sentinel-slo-platform" \
       org.opencontainers.image.title="incident-copilot"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 RUNBOOK_DIR=/srv/runbooks
