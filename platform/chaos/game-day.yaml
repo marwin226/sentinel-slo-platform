@@ -1,0 +1,57 @@
+# Game-day experiments (Chaos Mesh). Each one has a hypothesis written down *before* it runs;
+# results go in docs/game-days/. Sync the `chaos-experiments` Argo CD app to start a game day.
+#
+# H1: Killing 1 checkout-api pod every 5 minutes does not breach the availability SLO,
+#     because of readiness probes, preStop drain, PDB and >=4 replicas.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: checkout-pod-kill
+  namespace: chaos-mesh
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  historyLimit: 5
+  type: PodChaos
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      namespaces: [checkout]
+      labelSelectors: {app.kubernetes.io/name: checkout-api}
+---
+# H2: 150ms of added network latency on half the pods pushes p99 over 300ms and the
+#     latency burn alert fires within 10 minutes; the copilot names the latency runbook.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: checkout-network-latency
+  namespace: chaos-mesh
+spec:
+  action: delay
+  mode: fixed-percent
+  value: "50"
+  selector:
+    namespaces: [checkout]
+    labelSelectors: {app.kubernetes.io/name: checkout-api}
+  delay:
+    latency: 150ms
+    jitter: 30ms
+    correlation: "50"
+  direction: to
+  duration: 10m
+---
+# H3: CPU saturation on one pod is absorbed by the HPA before the latency SLO burns fast.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: checkout-cpu-stress
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces: [checkout]
+    labelSelectors: {app.kubernetes.io/name: checkout-api}
+  stressors:
+    cpu: {workers: 2, load: 90}
+  duration: 10m

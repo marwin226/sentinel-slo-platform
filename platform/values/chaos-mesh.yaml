@@ -1,0 +1,6 @@
+chaosDaemon:
+  # kind and EKS (AL2023) both use containerd
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+dashboard:
+  securityMode: true

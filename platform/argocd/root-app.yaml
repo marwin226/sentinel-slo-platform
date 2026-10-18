@@ -1,0 +1,19 @@
+# App-of-apps: the only thing applied by hand (scripts/bootstrap.sh). Everything else
+# in the cluster is reconciled from Git by Argo CD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sentinel-root
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+    targetRevision: main
+    path: platform/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}

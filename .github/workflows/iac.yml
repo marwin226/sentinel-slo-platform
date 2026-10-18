@@ -1,0 +1,47 @@
+name: iac
+
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/iac.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/iac.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform/aws
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: {terraform_version: "1.13.0"}
+      - name: fmt
+        run: terraform fmt -check -recursive
+      - name: init (no backend) + validate
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - uses: terraform-linters/setup-tflint@v4
+      - name: tflint
+        run: |
+          tflint --init
+          tflint --format compact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  checkov:
+    name: checkov (Terraform + Kubernetes misconfig scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform,kubernetes
+          soft_fail: true          # report-only: findings are triaged in docs/security.md
+          output_format: cli

@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: progressive-delivery
+  namespace: monitoring
+spec:
+  groups:
+    - name: progressive-delivery
+      rules:
+        - alert: RolloutAborted
+          expr: max by (namespace, name) (rollout_info{phase="Degraded"}) == 1
+          for: 1m
+          labels: {severity: ticket, service: checkout-api}
+          annotations:
+            summary: "Rollout {{ $labels.namespace }}/{{ $labels.name }} was aborted by its SLO analysis"
+            runbook_hint: bad release rollback canary abort
+            runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md

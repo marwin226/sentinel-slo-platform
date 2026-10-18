@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout-api-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+    targetRevision: main
+    path: deploy/checkout-api/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: checkout
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true, RespectIgnoreDifferences=true]
+  # The HPA owns replica count; don't let Argo CD fight it.
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Rollout
+      jsonPointers: [/spec/replicas]

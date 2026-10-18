@@ -1,0 +1,18 @@
+# Release metadata for the prod environment (JSON6902 patch against the base Rollout).
+# Env var order is fixed in base/rollout.yaml: 0=APP_VERSION 1=BUILD_ID 2=FAULT_ERROR_RATE 3=FAULT_LATENCY_MS
+# Edited by CI (promote job) and by scripts/release.sh (good/bad release demo) — never by hand in prod.
+- op: replace
+  path: /spec/replicas
+  value: 6
+- op: replace
+  path: /spec/template/spec/containers/0/env/0/value
+  value: "0.1.0"
+- op: replace
+  path: /spec/template/spec/containers/0/env/1/value
+  value: "local"
+- op: replace
+  path: /spec/template/spec/containers/0/env/2/value
+  value: "0"
+- op: replace
+  path: /spec/template/spec/containers/0/env/3/value
+  value: "0"

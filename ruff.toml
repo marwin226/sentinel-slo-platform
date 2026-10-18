@@ -1,0 +1,12 @@
+line-length = 130
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "BLE"]
+ignore = ["S101"]  # asserts are fine in tests
+
+[lint.isort]
+known-first-party = ["app"]
+
+[lint.per-file-ignores]
+"**/tests/**" = ["S", "E402"]

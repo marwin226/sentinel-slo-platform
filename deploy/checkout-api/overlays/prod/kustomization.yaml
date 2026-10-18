@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: checkout-prod
+resources:
+  - ../../base
+  - namespace.yaml
+# Promotion to prod is a pull request that copies the tag verified in dev.
+images:
+  - name: ghcr.io/joshilfernandes/sentinel-checkout-api
+    newTag: 0.1.0
+patches:
+  - path: release-patch.yaml
+    target: {kind: Rollout, name: checkout-api}
+  # prod gets a slower, more cautious canary
+  - target: {kind: Rollout, name: checkout-api}
+    patch: |-
+      - op: replace
+        path: /spec/strategy/canary/steps
+        value:
+          - setWeight: 10
+          - pause: {duration: 5m}
+          - setWeight: 25
+          - pause: {duration: 5m}
+          - setWeight: 50
+          - pause: {duration: 10m}
+  - target: {kind: HorizontalPodAutoscaler, name: checkout-api}
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 6
+  - target: {kind: Deployment, name: loadgen}
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0

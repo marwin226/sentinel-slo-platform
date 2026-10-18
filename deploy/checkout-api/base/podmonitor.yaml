@@ -1,0 +1,19 @@
+# Scrape every checkout-api pod and stamp each series with the Argo Rollouts
+# pod-template hash, so the canary SLO gate can query the canary in isolation.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: checkout-api
+  labels: {app.kubernetes.io/name: checkout-api}
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: checkout-api}
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_rollouts_pod_template_hash]
+          targetLabel: rollouts_pod_template_hash
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod

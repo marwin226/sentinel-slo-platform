@@ -1,0 +1,28 @@
+# Argo Rollouts re-points these selectors at the stable / canary ReplicaSets.
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-api-stable
+  labels: {app.kubernetes.io/name: checkout-api}
+spec:
+  selector: {app.kubernetes.io/name: checkout-api}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-api-canary
+  labels: {app.kubernetes.io/name: checkout-api}
+spec:
+  selector: {app.kubernetes.io/name: checkout-api}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+# Client-facing service: spans stable + canary pods, so traffic splits by replica ratio.
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-api
+  labels: {app.kubernetes.io/name: checkout-api}
+spec:
+  selector: {app.kubernetes.io/name: checkout-api}
+  ports: [{name: http, port: 80, targetPort: http}]

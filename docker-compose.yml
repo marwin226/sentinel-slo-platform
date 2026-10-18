@@ -1,0 +1,75 @@
+# 5-minute local demo, no Kubernetes needed:
+#   docker compose up --build
+# A stable build (v1.4.0) and a *bad canary* (v1.5.0, 40% errors) take traffic side by side.
+# Within ~2 minutes the fast-burn SLO alert fires, Alertmanager calls the incident copilot,
+# and the copilot names v1.5.0 as the suspect:  curl localhost:8081/incidents/latest.md
+#
+# Grafana http://localhost:3000 (anonymous) · Prometheus http://localhost:9090 · Alertmanager http://localhost:9093
+name: sentinel
+
+x-checkout: &checkout
+  build: ./services/checkout-api
+  read_only: true
+  tmpfs: [/tmp]
+  restart: unless-stopped
+
+services:
+  checkout-stable:
+    <<: *checkout
+    environment: {APP_VERSION: "1.4.0", BUILD_ID: "a1b2c3d"}
+    ports: ["8080:8080"]
+
+  checkout-canary:
+    <<: *checkout
+    environment: {APP_VERSION: "1.5.0", BUILD_ID: "e4f5a6b", FAULT_ERROR_RATE: "${CANARY_ERROR_RATE:-0.4}"}
+    ports: ["8090:8080"]
+
+  # 60/40 traffic split between stable and canary
+  loadgen-stable:
+    build: ./services/checkout-api
+    command: ["python", "-m", "app.loadgen"]
+    environment: {TARGET_URL: "http://checkout-stable:8080", RPS: "6"}
+    depends_on: [checkout-stable]
+  loadgen-canary:
+    build: ./services/checkout-api
+    command: ["python", "-m", "app.loadgen"]
+    environment: {TARGET_URL: "http://checkout-canary:8080", RPS: "4"}
+    depends_on: [checkout-canary]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
+    volumes:
+      - ./observability/local/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/rules:/etc/prometheus/rules:ro
+    ports: ["9090:9090"]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./observability/local/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports: ["9093:9093"]
+
+  incident-copilot:
+    build:
+      context: .
+      dockerfile: services/incident-copilot/Dockerfile
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      LLM_API_KEY: ${LLM_API_KEY:-}          # optional: free Groq key -> LLM-written briefs
+      LLM_MODEL: ${LLM_MODEL:-llama-3.3-70b-versatile}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    ports: ["8081:8081"]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/sentinel-slo.json
+    volumes:
+      - ./observability/local/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/local/grafana/dashboards/provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      - ./platform/observability/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]

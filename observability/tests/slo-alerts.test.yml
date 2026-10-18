@@ -1,0 +1,62 @@
+# Unit tests for the generated SLO alerts: `promtool test rules observability/tests/slo-alerts.test.yml`
+# Alerting rules are code; they get tests like code.
+rule_files:
+  - ../rules/checkout-api-slo.rules.yml
+
+evaluation_interval: 30s
+
+tests:
+  # A bad release: 10% of requests fail -> 20x burn rate -> page within minutes.
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{service="checkout-api",route="/api/v1/checkout",method="POST",version="v2",code="200"}'
+        values: '0+90x120'
+      - series: 'http_requests_total{service="checkout-api",route="/api/v1/checkout",method="POST",version="v2",code="503"}'
+        values: '0+10x120'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: CheckoutAvailabilityBudgetBurnFast
+        exp_alerts:
+          - exp_labels:
+              service: checkout-api
+              slo: availability
+              severity: page
+              team: team-checkout
+            exp_annotations:
+              summary: checkout-api is burning its availability error budget too fast (page)
+              description: '99.5% of checkout-api requests return a non-5xx response over 30 days. Current error ratio over the long window: 10%.'
+              runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
+              runbook_hint: availability error budget burn
+    promql_expr_test:
+      - expr: slo:burn_rate:ratio_rate1h{slo="availability"}
+        eval_time: 60m
+        exp_samples:
+          - labels: 'slo:burn_rate:ratio_rate1h{service="checkout-api",slo="availability"}'
+            value: 20
+
+  # A healthy service: 0.1% errors (0.2x burn) must never page.
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{service="checkout-api",route="/api/v1/checkout",method="POST",version="v1",code="200"}'
+        values: '0+999x120'
+      - series: 'http_requests_total{service="checkout-api",route="/api/v1/checkout",method="POST",version="v1",code="503"}'
+        values: '0+1x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: CheckoutAvailabilityBudgetBurnFast
+        exp_alerts: []
+      - eval_time: 90m
+        alertname: CheckoutAvailabilityBudgetBurnSlow
+        exp_alerts: []
+
+  # Probe/unmatched traffic must not count toward the SLI.
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{service="checkout-api",route="/api/v1/checkout",method="POST",version="v1",code="200"}'
+        values: '0+100x60'
+      - series: 'http_requests_total{service="checkout-api",route="unmatched",method="GET",version="v1",code="503"}'
+        values: '0+100x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: CheckoutAvailabilityBudgetBurnFast
+        exp_alerts: []

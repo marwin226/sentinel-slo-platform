@@ -1,0 +1,50 @@
+# kube-prometheus-stack: Prometheus Operator, Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics.
+fullnameOverride: kube-prometheus-stack
+
+prometheus:
+  prometheusSpec:
+    # Pick up PodMonitors/ServiceMonitors/PrometheusRules from every namespace,
+    # not only those labelled for this Helm release.
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 15d
+    enableFeatures: [exemplar-storage]
+    resources:
+      requests: {cpu: 200m, memory: 512Mi}
+
+alertmanager:
+  config:
+    route:
+      receiver: "null"
+      group_by: [alertname, service, slo]
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 4h
+      routes:
+        # SLO burn alerts go to the AI incident copilot first; it enriches and fans out
+        # to Slack / GitHub issues. Add a pager receiver here for real on-call.
+        - receiver: incident-copilot
+          matchers: ['severity=~"page|ticket"']
+          continue: false
+        - receiver: "null"
+          matchers: ['alertname="Watchdog"']
+    receivers:
+      - name: "null"
+      - name: incident-copilot
+        webhook_configs:
+          - url: http://incident-copilot.sentinel-system.svc:8081/webhook/alertmanager
+            send_resolved: true
+
+grafana:
+  adminPassword: sentinel-demo   # local demo only; use an existingSecret in real clusters
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+      label: grafana_dashboard
+  additionalDataSources:
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo.monitoring.svc:3200

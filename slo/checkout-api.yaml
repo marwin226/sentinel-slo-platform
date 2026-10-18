@@ -1,0 +1,26 @@
+# SLOs as code. `make slo` (scripts/generate_slo_rules.py) turns this file into
+# multi-window, multi-burn-rate Prometheus rules (Google SRE Workbook, ch. 5).
+# CI fails if the generated rules drift from this spec.
+service: checkout-api
+window: 30d
+owner: team-checkout
+slos:
+  - name: availability
+    objective: 0.995
+    description: 99.5% of checkout-api requests return a non-5xx response over 30 days.
+    alert_prefix: CheckoutAvailability
+    runbook: docs/runbooks/checkout-error-budget-burn.md
+    sli:
+      errors: sum(rate(http_requests_total{service="checkout-api",route!="unmatched",code=~"5.."}[{{window}}]))
+      total: sum(rate(http_requests_total{service="checkout-api",route!="unmatched"}[{{window}}]))
+
+  - name: latency
+    objective: 0.99
+    description: 99% of checkout-api requests complete in under 300 ms over 30 days.
+    alert_prefix: CheckoutLatency
+    runbook: docs/runbooks/checkout-latency.md
+    sli:
+      errors: >-
+        (sum(rate(http_request_duration_seconds_count{service="checkout-api",route!="unmatched"}[{{window}}]))
+        - sum(rate(http_request_duration_seconds_bucket{service="checkout-api",route!="unmatched",le="0.3"}[{{window}}])))
+      total: sum(rate(http_request_duration_seconds_count{service="checkout-api",route!="unmatched"}[{{window}}]))

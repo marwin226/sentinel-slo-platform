@@ -1,0 +1,38 @@
+# Synthetic traffic so SLIs (and the canary gate) always have data, even in a demo cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  labels: {app.kubernetes.io/name: loadgen}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: loadgen}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: loadgen}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: loadgen
+          image: ghcr.io/joshilfernandes/sentinel-checkout-api:0.1.0
+          command: ["python", "-m", "app.loadgen"]
+          env:
+            - {name: TARGET_URL, value: "http://checkout-api"}
+            - {name: RPS, value: "8"}
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          readinessProbe:
+            exec: {command: ["true"]}
+          livenessProbe:
+            exec: {command: ["true"]}
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}

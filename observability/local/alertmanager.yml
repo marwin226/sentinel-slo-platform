@@ -1,0 +1,11 @@
+route:
+  receiver: incident-copilot
+  group_by: [alertname, service, slo]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+receivers:
+  - name: incident-copilot
+    webhook_configs:
+      - url: http://incident-copilot:8081/webhook/alertmanager
+        send_resolved: true

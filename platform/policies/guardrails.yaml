@@ -1,0 +1,124 @@
+# Golden-path guardrails, enforced at admission by Kyverno for every namespace labelled
+# sentinel.dev/guardrails=enforced. Platform namespaces are deliberately out of scope.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-requests-and-limits
+  annotations:
+    policies.kyverno.io/title: Require CPU/memory requests and memory limits
+    policies.kyverno.io/description: Unbounded pods make capacity planning and cost allocation impossible.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: resources
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels: {sentinel.dev/guardrails: enforced}
+      validate:
+        message: "Every container needs cpu/memory requests and a memory limit."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests: {cpu: "?*", memory: "?*"}
+                  limits: {memory: "?*"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow mutable image tags
+    policies.kyverno.io/description: ':latest makes rollbacks and canary analysis meaningless - a version must be immutable.'
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-latest
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels: {sentinel.dev/guardrails: enforced}
+      validate:
+        message: "Images must use an immutable tag, not ':latest' or no tag."
+        pattern:
+          spec:
+            containers:
+              - image: "*:* & !*:latest"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-hardened-pods
+  annotations:
+    policies.kyverno.io/title: Non-root, no privilege escalation, probes present
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels: {sentinel.dev/guardrails: enforced}
+      validate:
+        message: "Pods must set runAsNonRoot and containers must disallow privilege escalation."
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - securityContext:
+                  allowPrivilegeEscalation: false
+    - name: probes
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels: {sentinel.dev/guardrails: enforced}
+      validate:
+        message: "Containers need readiness and liveness probes so rollouts and SLIs are trustworthy."
+        pattern:
+          spec:
+            containers:
+              - readinessProbe: {}
+                livenessProbe: {}
+---
+# Supply-chain: only images signed by this repo's GitHub Actions (cosign keyless / Sigstore)
+# may run. Audit mode by default so locally built `kind load` images still work in the demo.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: Verify cosign keyless signatures
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: sentinel-images-signed-by-ci
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels: {sentinel.dev/guardrails: enforced}
+      verifyImages:
+        - imageReferences: ["ghcr.io/joshilfernandes/sentinel-*"]
+          mutateDigest: true
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subjectRegExp: "^https://github.com/JoshilFernandes/sentinel-slo-platform/\\.github/workflows/.+@refs/heads/main$"
+                    rekor:
+                      url: https://rekor.sigstore.dev

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: chaos-experiments
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+# Manual sync on purpose: syncing this app *is* starting a game day.
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+    targetRevision: main
+    path: platform/chaos
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: chaos-mesh
+  syncPolicy:
+    syncOptions: [CreateNamespace=true]

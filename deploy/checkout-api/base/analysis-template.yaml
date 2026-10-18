@@ -1,0 +1,51 @@
+# SLO gate for canaries. Every query is scoped to the *canary's* pod-template hash
+# (relabelled onto metrics by the PodMonitor), so the stable version's healthy
+# traffic can never mask a bad build.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: checkout-slo-gate
+spec:
+  args:
+    - name: canary-hash
+    - name: prometheus-address
+      value: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+    # canary may burn budget at most 2x the sustainable rate (SLO 99.5% -> budget 0.005)
+    - name: max-burn-rate
+      value: "2"
+  metrics:
+    - name: canary-has-traffic
+      interval: 30s
+      failureLimit: 3          # tolerate warm-up before traffic arrives
+      successCondition: len(result) > 0 && result[0] >= 0.05
+      provider:
+        prometheus:
+          address: "{{args.prometheus-address}}"
+          query: |
+            sum(rate(http_requests_total{service="checkout-api",route!="unmatched",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m]))
+
+    - name: canary-error-budget-burn
+      interval: 30s
+      failureLimit: 1
+      successCondition: len(result) == 0 || isNaN(result[0]) || result[0] <= {{args.max-burn-rate}}
+      provider:
+        prometheus:
+          address: "{{args.prometheus-address}}"
+          query: |
+            (
+              sum(rate(http_requests_total{service="checkout-api",route!="unmatched",code=~"5..",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m]))
+              /
+              sum(rate(http_requests_total{service="checkout-api",route!="unmatched",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m]))
+            ) / 0.005
+
+    - name: canary-latency-p99
+      interval: 30s
+      failureLimit: 2
+      successCondition: len(result) == 0 || isNaN(result[0]) || result[0] < 0.3
+      provider:
+        prometheus:
+          address: "{{args.prometheus-address}}"
+          query: |
+            histogram_quantile(0.99, sum by (le) (
+              rate(http_request_duration_seconds_bucket{service="checkout-api",route!="unmatched",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m])
+            ))

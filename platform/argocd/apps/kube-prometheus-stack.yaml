@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 92.10.1   # pinned; Renovate opens PRs for upgrades
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $values/platform/values/kube-prometheus-stack.yaml
+    - repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

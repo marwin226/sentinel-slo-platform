@@ -1,0 +1,10 @@
+# Free local cluster that mirrors the EKS topology closely enough for the full demo.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: sentinel
+nodes:
+  - role: control-plane
+  - role: worker
+    labels: {sentinel.dev/pool: workloads}
+  - role: worker
+    labels: {sentinel.dev/pool: workloads}

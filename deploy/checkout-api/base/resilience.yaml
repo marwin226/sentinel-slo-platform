@@ -1,0 +1,49 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: checkout-api
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: checkout-api}
+---
+# HPA scales the Rollout (not a Deployment); Argo Rollouts keeps canary weights proportional.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: checkout-api
+spec:
+  scaleTargetRef:
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    name: checkout-api
+  minReplicas: 4
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 70}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+# Default-deny ingress; only the ingress controller, load generator and Prometheus may talk to checkout-api.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: checkout-api
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: checkout-api}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: monitoring}
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: loadgen}
+      ports:
+        - {port: 8080, protocol: TCP}

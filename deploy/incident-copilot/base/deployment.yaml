@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sentinel-system
+  labels:
+    sentinel.dev/guardrails: enforced
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: incident-copilot
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incident-copilot
+  labels:
+    app.kubernetes.io/name: incident-copilot
+    app.kubernetes.io/part-of: sentinel
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app.kubernetes.io/name: incident-copilot}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: incident-copilot
+        app.kubernetes.io/part-of: sentinel
+    spec:
+      serviceAccountName: incident-copilot
+      automountServiceAccountToken: false   # read-only by design: no Kubernetes API access at all
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: incident-copilot
+          image: ghcr.io/joshilfernandes/sentinel-incident-copilot:0.1.0
+          ports: [{name: http, containerPort: 8081}]
+          env:
+            - name: PROMETHEUS_URL
+              value: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+            - name: LLM_BASE_URL
+              value: https://api.groq.com/openai/v1
+            - name: LLM_MODEL
+              value: llama-3.3-70b-versatile
+            # Optional secrets: the copilot degrades to deterministic briefs without them.
+            # kubectl -n sentinel-system create secret generic incident-copilot \
+            #   --from-literal=LLM_API_KEY=... --from-literal=SLACK_WEBHOOK_URL=...
+            - name: LLM_API_KEY
+              valueFrom: {secretKeyRef: {name: incident-copilot, key: LLM_API_KEY, optional: true}}
+            - name: SLACK_WEBHOOK_URL
+              valueFrom: {secretKeyRef: {name: incident-copilot, key: SLACK_WEBHOOK_URL, optional: true}}
+            - name: GITHUB_TOKEN
+              valueFrom: {secretKeyRef: {name: incident-copilot, key: GITHUB_TOKEN, optional: true}}
+            - name: GITHUB_REPOSITORY
+              value: JoshilFernandes/sentinel-slo-platform
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 300m, memory: 256Mi}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: incident-copilot
+  labels: {app.kubernetes.io/name: incident-copilot}
+spec:
+  selector: {app.kubernetes.io/name: incident-copilot}
+  ports: [{name: http, port: 8081, targetPort: http}]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: incident-copilot
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: incident-copilot}
+  endpoints: [{port: http, path: /metrics, interval: 30s}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: incident-copilot
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: incident-copilot}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: monitoring}
+      ports: [{port: 8081, protocol: TCP}]

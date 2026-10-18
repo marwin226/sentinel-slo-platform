@@ -1,0 +1,104 @@
+# Build -> scan -> SBOM -> sign -> promote (GitOps). Argo CD does the actual deploy.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths: ["services/**", "docs/runbooks/**", ".github/workflows/release.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/joshilfernandes/sentinel
+
+jobs:
+  image:
+    name: image (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write      # Sigstore keyless signing via GitHub OIDC
+      security-events: write
+    strategy:
+      matrix:
+        include:
+          - service: checkout-api
+            context: services/checkout-api
+            file: services/checkout-api/Dockerfile
+          - service: incident-copilot
+            context: .
+            file: services/incident-copilot/Dockerfile
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push (SBOM + SLSA provenance attestations)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          sbom: true
+          provenance: mode=max
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.tag }}
+            BUILD_ID=${{ github.sha }}
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - name: Trivy vulnerability scan (fail on fixable CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}@${{ steps.build.outputs.digest }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: sarif
+          output: trivy.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: {sarif_file: trivy.sarif, category: "trivy-${{ matrix.service }}"}
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign image (keyless; verified at admission by Kyverno)
+        run: cosign sign --yes "${IMAGE_PREFIX}-${{ matrix.service }}@${{ steps.build.outputs.digest }}"
+
+  promote-dev:
+    name: promote to dev (GitOps commit)
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump image tags + release metadata in the dev overlay
+        env:
+          TAG: ${{ needs.image.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd deploy/checkout-api/overlays/dev
+          kustomize edit set image "ghcr.io/joshilfernandes/sentinel-checkout-api:${TAG}"
+          yq -i "(.[] | select(.path == \"/spec/template/spec/containers/0/env/0/value\")).value = \"${TAG}\"" release-patch.yaml
+          yq -i "(.[] | select(.path == \"/spec/template/spec/containers/0/env/1/value\")).value = \"${GITHUB_SHA}\"" release-patch.yaml
+          cd "$GITHUB_WORKSPACE/deploy/incident-copilot/base"
+          kustomize edit set image "ghcr.io/joshilfernandes/sentinel-incident-copilot:${TAG}"
+      - name: Commit
+        run: |
+          git config user.name "sentinel-release-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/
+          git diff --cached --quiet && exit 0
+          git commit -m "release(dev): ${{ needs.image.outputs.tag }} [skip ci]"
+          git push
