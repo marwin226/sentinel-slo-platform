@@ -19,7 +19,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: loadgen
-          image: ghcr.io/joshilfernandes/sentinel-checkout-api:0.1.0
+          image: ghcr.io/marwin226/sentinel-checkout-api:0.1.0
           command: ["python", "-m", "app.loadgen"]
           env:
             - {name: TARGET_URL, value: "http://checkout-api"}

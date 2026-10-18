@@ -100,7 +100,7 @@ def build_groups(spec: dict) -> list[dict]:
                         "summary": f"{service} is burning its {name} error budget too fast ({severity})",
                         "description": f"{slo['description']} Current error ratio over the long window: "
                         "{{ $value | humanizePercentage }}.",
-                        "runbook_url": f"https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/{slo['runbook']}",
+                        "runbook_url": f"https://github.com/marwin226/sentinel-slo-platform/blob/main/{slo['runbook']}",
                         "runbook_hint": f"{name} error budget burn",
                     },
                 }

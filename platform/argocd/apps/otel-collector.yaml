@@ -16,7 +16,7 @@ spec:
         releaseName: otel-collector
         valueFiles:
           - $values/platform/values/otel-collector.yaml
-    - repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+    - repoURL: https://github.com/marwin226/sentinel-slo-platform.git
       targetRevision: main
       ref: values
   destination:

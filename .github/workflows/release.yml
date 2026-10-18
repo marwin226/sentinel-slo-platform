@@ -12,7 +12,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/joshilfernandes/sentinel
+  IMAGE_PREFIX: ghcr.io/marwin226/sentinel
 
 jobs:
   image:
@@ -89,11 +89,11 @@ jobs:
         run: |
           set -euo pipefail
           cd deploy/checkout-api/overlays/dev
-          kustomize edit set image "ghcr.io/joshilfernandes/sentinel-checkout-api:${TAG}"
+          kustomize edit set image "ghcr.io/marwin226/sentinel-checkout-api:${TAG}"
           yq -i "(.[] | select(.path == \"/spec/template/spec/containers/0/env/0/value\")).value = \"${TAG}\"" release-patch.yaml
           yq -i "(.[] | select(.path == \"/spec/template/spec/containers/0/env/1/value\")).value = \"${GITHUB_SHA}\"" release-patch.yaml
           cd "$GITHUB_WORKSPACE/deploy/incident-copilot/base"
-          kustomize edit set image "ghcr.io/joshilfernandes/sentinel-incident-copilot:${TAG}"
+          kustomize edit set image "ghcr.io/marwin226/sentinel-incident-copilot:${TAG}"
       - name: Commit
         run: |
           git config user.name "sentinel-release-bot"

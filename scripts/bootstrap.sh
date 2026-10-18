@@ -16,11 +16,11 @@ if [[ "$MODE" == "kind" ]]; then
   need kind; need docker
   kind get clusters | grep -qx sentinel || kind create cluster --config "$ROOT/infra/kind/kind-config.yaml"
   echo "==> building images and loading them into kind (no registry needed)"
-  docker build -t ghcr.io/joshilfernandes/sentinel-checkout-api:0.1.0 "$ROOT/services/checkout-api"
-  docker build -t ghcr.io/joshilfernandes/sentinel-incident-copilot:0.1.0 -f "$ROOT/services/incident-copilot/Dockerfile" "$ROOT"
+  docker build -t ghcr.io/marwin226/sentinel-checkout-api:0.1.0 "$ROOT/services/checkout-api"
+  docker build -t ghcr.io/marwin226/sentinel-incident-copilot:0.1.0 -f "$ROOT/services/incident-copilot/Dockerfile" "$ROOT"
   kind load docker-image --name sentinel \
-    ghcr.io/joshilfernandes/sentinel-checkout-api:0.1.0 \
-    ghcr.io/joshilfernandes/sentinel-incident-copilot:0.1.0
+    ghcr.io/marwin226/sentinel-checkout-api:0.1.0 \
+    ghcr.io/marwin226/sentinel-incident-copilot:0.1.0
 fi
 
 echo "==> installing Argo CD ${ARGOCD_CHART_VERSION}"

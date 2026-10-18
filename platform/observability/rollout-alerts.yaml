@@ -14,4 +14,4 @@ spec:
           annotations:
             summary: "Rollout {{ $labels.namespace }}/{{ $labels.name }} was aborted by its SLO analysis"
             runbook_hint: bad release rollback canary abort
-            runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
+            runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md

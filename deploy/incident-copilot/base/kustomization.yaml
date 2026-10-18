@@ -4,5 +4,5 @@ namespace: sentinel-system
 resources:
   - deployment.yaml
 images:
-  - name: ghcr.io/joshilfernandes/sentinel-incident-copilot
+  - name: ghcr.io/marwin226/sentinel-incident-copilot
     newTag: 0.1.0

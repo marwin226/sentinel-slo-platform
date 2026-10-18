@@ -36,7 +36,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: incident-copilot
-          image: ghcr.io/joshilfernandes/sentinel-incident-copilot:0.1.0
+          image: ghcr.io/marwin226/sentinel-incident-copilot:0.1.0
           ports: [{name: http, containerPort: 8081}]
           env:
             - name: PROMETHEUS_URL
@@ -55,7 +55,7 @@ spec:
             - name: GITHUB_TOKEN
               valueFrom: {secretKeyRef: {name: incident-copilot, key: GITHUB_TOKEN, optional: true}}
             - name: GITHUB_REPOSITORY
-              value: JoshilFernandes/sentinel-slo-platform
+              value: marwin226/sentinel-slo-platform
           resources:
             requests: {cpu: 50m, memory: 96Mi}
             limits: {cpu: 300m, memory: 256Mi}

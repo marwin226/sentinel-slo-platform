@@ -113,12 +113,12 @@ spec:
               namespaceSelector:
                 matchLabels: {sentinel.dev/guardrails: enforced}
       verifyImages:
-        - imageReferences: ["ghcr.io/joshilfernandes/sentinel-*"]
+        - imageReferences: ["ghcr.io/marwin226/sentinel-*"]
           mutateDigest: true
           attestors:
             - entries:
                 - keyless:
                     issuer: https://token.actions.githubusercontent.com
-                    subjectRegExp: "^https://github.com/JoshilFernandes/sentinel-slo-platform/\\.github/workflows/.+@refs/heads/main$"
+                    subjectRegExp: "^https://github.com/marwin226/sentinel-slo-platform/\\.github/workflows/.+@refs/heads/main$"
                     rekor:
                       url: https://rekor.sigstore.dev

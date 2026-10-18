@@ -25,7 +25,7 @@ tests:
             exp_annotations:
               summary: checkout-api is burning its availability error budget too fast (page)
               description: '99.5% of checkout-api requests return a non-5xx response over 30 days. Current error ratio over the long window: 10%.'
-              runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
+              runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
               runbook_hint: availability error budget burn
     promql_expr_test:
       - expr: slo:burn_rate:ratio_rate1h{slo="availability"}

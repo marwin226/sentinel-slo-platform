@@ -57,7 +57,7 @@ spec:
       terminationGracePeriodSeconds: 20
       containers:
         - name: checkout-api
-          image: ghcr.io/joshilfernandes/sentinel-checkout-api:0.1.0
+          image: ghcr.io/marwin226/sentinel-checkout-api:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -1,7 +1,7 @@
 # Sentinel — SLO-driven, self-healing delivery platform
 
-[![ci](https://github.com/JoshilFernandes/sentinel-slo-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/JoshilFernandes/sentinel-slo-platform/actions/workflows/ci.yml)
-[![iac](https://github.com/JoshilFernandes/sentinel-slo-platform/actions/workflows/iac.yml/badge.svg)](https://github.com/JoshilFernandes/sentinel-slo-platform/actions/workflows/iac.yml)
+[![ci](https://github.com/marwin226/sentinel-slo-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/marwin226/sentinel-slo-platform/actions/workflows/ci.yml)
+[![iac](https://github.com/marwin226/sentinel-slo-platform/actions/workflows/iac.yml/badge.svg)](https://github.com/marwin226/sentinel-slo-platform/actions/workflows/iac.yml)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-326CE5?logo=kubernetes&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-AWS%20EKS-7B42BC?logo=terraform&logoColor=white)
 ![Argo](https://img.shields.io/badge/GitOps-Argo%20CD%20%2B%20Rollouts-EF7B4D?logo=argo&logoColor=white)
@@ -115,7 +115,7 @@ Verified on 2026-10-18 by running the real components together (stable v1.4.0 + 
 ### 1 · Five-minute demo (Docker only)
 
 ```bash
-git clone https://github.com/JoshilFernandes/sentinel-slo-platform && cd sentinel-slo-platform
+git clone https://github.com/marwin226/sentinel-slo-platform && cd sentinel-slo-platform
 docker compose up --build            # optional: cp .env.example .env and add a free Groq key
 # after ~1-2 min:
 curl -s localhost:8081/incidents/latest.md
@@ -196,4 +196,4 @@ Short ADRs in [`docs/adr/`](docs/adr):
 - [ ] Copilot: Loki log evidence and a "draft the revert PR" action behind human approval
 
 ---
-Built by **Joshil Fernandes** · [LinkedIn](https://www.linkedin.com/in/joshil-fernandes) · [GitHub](https://github.com/JoshilFernandes) · MIT licensed
+Built by **Joshil Fernandes** · [LinkedIn](https://www.linkedin.com/in/joshil-fernandes) · [GitHub](https://github.com/marwin226) · MIT licensed

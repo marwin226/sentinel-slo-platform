@@ -6,7 +6,7 @@ COPY services/incident-copilot/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM python:3.12-slim AS runtime
-LABEL org.opencontainers.image.source="https://github.com/JoshilFernandes/sentinel-slo-platform" \
+LABEL org.opencontainers.image.source="https://github.com/marwin226/sentinel-slo-platform" \
       org.opencontainers.image.title="incident-copilot"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 RUNBOOK_DIR=/srv/runbooks
 COPY --from=build /install /usr/local

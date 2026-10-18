@@ -106,7 +106,7 @@ spec:
       annotations:
         summary: checkout-api is burning its availability error budget too fast (page)
         description: '99.5% of checkout-api requests return a non-5xx response over 30 days. Current error ratio over the long window: {{ $value | humanizePercentage }}.'
-        runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
+        runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
         runbook_hint: availability error budget burn
     - alert: CheckoutAvailabilityBudgetBurnSlow
       expr: |-
@@ -121,7 +121,7 @@ spec:
       annotations:
         summary: checkout-api is burning its availability error budget too fast (ticket)
         description: '99.5% of checkout-api requests return a non-5xx response over 30 days. Current error ratio over the long window: {{ $value | humanizePercentage }}.'
-        runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
+        runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-error-budget-burn.md
         runbook_hint: availability error budget burn
   - name: slo-recording-checkout-api-latency
     interval: 30s
@@ -220,7 +220,7 @@ spec:
       annotations:
         summary: checkout-api is burning its latency error budget too fast (page)
         description: '99% of checkout-api requests complete in under 300 ms over 30 days. Current error ratio over the long window: {{ $value | humanizePercentage }}.'
-        runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-latency.md
+        runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-latency.md
         runbook_hint: latency error budget burn
     - alert: CheckoutLatencyBudgetBurnSlow
       expr: |-
@@ -235,5 +235,5 @@ spec:
       annotations:
         summary: checkout-api is burning its latency error budget too fast (ticket)
         description: '99% of checkout-api requests complete in under 300 ms over 30 days. Current error ratio over the long window: {{ $value | humanizePercentage }}.'
-        runbook_url: https://github.com/JoshilFernandes/sentinel-slo-platform/blob/main/docs/runbooks/checkout-latency.md
+        runbook_url: https://github.com/marwin226/sentinel-slo-platform/blob/main/docs/runbooks/checkout-latency.md
         runbook_hint: latency error budget burn

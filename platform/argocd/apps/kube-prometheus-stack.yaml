@@ -16,7 +16,7 @@ spec:
         releaseName: kube-prometheus-stack
         valueFiles:
           - $values/platform/values/kube-prometheus-stack.yaml
-    - repoURL: https://github.com/JoshilFernandes/sentinel-slo-platform.git
+    - repoURL: https://github.com/marwin226/sentinel-slo-platform.git
       targetRevision: main
       ref: values
   destination:
