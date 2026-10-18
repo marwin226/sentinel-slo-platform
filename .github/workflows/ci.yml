@@ -22,7 +22,7 @@ jobs:
         service: [checkout-api, incident-copilot]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -45,7 +45,7 @@ jobs:
       KUBECONFORM_VERSION: "0.7.0"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - run: pip install pyyaml==6.0.2 yamllint==1.37.1
       - name: SLO rules are generated from slo/*.yaml (no drift)
