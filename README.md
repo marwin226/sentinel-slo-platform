@@ -196,4 +196,4 @@ Short ADRs in [`docs/adr/`](docs/adr):
 - [ ] Copilot: Loki log evidence and a "draft the revert PR" action behind human approval
 
 ---
-Built by **Joshil Fernandes** · [LinkedIn](https://www.linkedin.com/in/joshil-fernandes) · [GitHub](https://github.com/marwin226) · MIT licensed
+Built by **Marwin serrao** · [LinkedIn](https://www.linkedin.com/in/marwin-serrao-543333173/) · [GitHub](https://github.com/marwin226) · MIT licensed
