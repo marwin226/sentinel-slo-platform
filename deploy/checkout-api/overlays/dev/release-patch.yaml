@@ -6,10 +6,10 @@
   value: 4
 - op: replace
   path: /spec/template/spec/containers/0/env/0/value
-  value: "sha-12cb227"
+  value: "sha-0766ece"
 - op: replace
   path: /spec/template/spec/containers/0/env/1/value
-  value: "12cb22707ae5b243e3103f05b9550f8ac2019ea4"
+  value: "0766eced2849c0a3434a69932273ee88197ff6b3"
 - op: replace
   path: /spec/template/spec/containers/0/env/2/value
   value: "0"
