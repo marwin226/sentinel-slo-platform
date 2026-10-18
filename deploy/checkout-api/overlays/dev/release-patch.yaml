@@ -6,10 +6,10 @@
   value: 4
 - op: replace
   path: /spec/template/spec/containers/0/env/0/value
-  value: "0.1.0"
+  value: "sha-7a266d1"
 - op: replace
   path: /spec/template/spec/containers/0/env/1/value
-  value: "local"
+  value: "7a266d15e149edc695cf062ccd62d66a90e79a98"
 - op: replace
   path: /spec/template/spec/containers/0/env/2/value
   value: "0"
